@@ -52,11 +52,6 @@ function drawSnake(Snake) {
 
   let snakePositions = getSnakePositionSet(Snake);
 
-  // if (snakePositions.has(toPos(head[0], head[1])) || (head[0] > Row || head[1] > Col)) {
-  //   clearInterval(gameInterval);
-  //   Canvas.style.borderColor = 'Red';
-  // };
-
   for (let i = 0; i < Row; i++) {
     for (let j = 0; j < Col; j++) {
       let currentPosition = toPos(i, j);
@@ -90,9 +85,10 @@ let moveRight = ([t, l]) => [t, l + 1];
 let moveLeft = ([t, l]) => [t, l - 1];
 let moveUp = ([t, l]) => [t - 1, l];
 let moveDown = ([t, l]) => [t + 1, l];
-
+let directionQueue = [];
 let currentDirection = moveRight;
-let flushedDirection = currentDirection;
+//  sometimes currentdirection change very fastly that's why we have to use flushedDirection although it is not very useful technique
+// let flushedDirection = currentDirection;
 let cnt = 0;
 
 window.addEventListener("keydown", (e) => {
@@ -101,30 +97,22 @@ window.addEventListener("keydown", (e) => {
     case "ArrowLeft":
     case "L":
     case "l":
-      if (flushedDirection !== moveRight) {
-        currentDirection = moveLeft;
-      }
+      directionQueue.push(moveLeft);
       break;
     case "ArrowRight":
     case "D":
     case "d":
-      if (flushedDirection !== moveLeft) {
-        currentDirection = moveRight;
-      }
+      directionQueue.push(moveRight);
       break;
     case "ArrowUp":
     case "W":
     case "w":
-      if (flushedDirection !== moveDown) {
-        currentDirection = moveUp;
-      }
+      directionQueue.push(moveUp);
       break;
     case "ArrowDown":
     case "s":
     case "S":
-      if (flushedDirection !== moveUp) {
-        currentDirection = moveDown;
-      }
+      directionQueue.push(moveDown);
       break;
     case " ":
       if (cnt === 0) {
@@ -161,8 +149,18 @@ function step() {
   currentSnake.shift();
   let head = currentSnake[currentSnake.length - 1];
   let nexthead = currentDirection(head);
-  flushedDirection = currentDirection;
+  let nextDirection = currentDirection;
+  // flushedDirection = currentDirection;
 
+  while (directionQueue.length > 0) {
+    let candidateDireaction = directionQueue.shift();
+    if (areOpposite(candidateDireaction, currentDirection)) {
+      continue;
+    }
+    nextDirection = candidateDireaction;
+  }
+
+  currentDirection = nextDirection;
   //  first we check valid head 
   if (!chekvalidHead(currentSnake, nexthead)) {
     stopGame();
@@ -181,11 +179,27 @@ function step() {
   drawSnake(currentSnake);
 }
 
+function areOpposite(dir1, dir2) {
+  if (dir1 === moveLeft && dir2 === moveRight) {
+    return true;
+  }
+  if (dir1 === moveRight && dir2 === moveLeft) {
+    return true;
+  }
+  if (dir1 === moveUp && dir2 === moveDown) {
+    return true;
+  }
+  if (dir1 === moveDown && dir2 === moveUp) {
+    return true;
+  }
+
+}
+
 
 function chekvalidHead(Snake, [top, left]) {
   let snakePositions = getSnakePositionSet(Snake);
   if (top < 0 || top >= Row) return false;
-  if (left < 0 || top >= Col) return false;
+  if (left < 0 || left >= Col) return false;
   let position = toPos(top, left);
   if (snakePositions.has(position)) return false;
   return true;
