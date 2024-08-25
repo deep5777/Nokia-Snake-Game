@@ -1,13 +1,13 @@
-let Row = 30;
-let Col = 50;
+let Row = 2;
+let Col = 12;
 const PIXEL = 10;
 
 let pixels = new Map();
-
 let Canvas = document.getElementById("canvas");
 let Score = document.getElementById("score");
 let gameInterval;
 let snakePositions;
+let vacantPositions;
 
 //  set up all grids 
 function InitiateCanvas() {
@@ -32,7 +32,7 @@ function InitiateCanvas() {
 InitiateCanvas();
 
 
-let foodPosition = toPos(15, 16);
+let foodPosition;
 
 function getSnakePositionSet(Snake) {
   let snakePositions = new Set();
@@ -42,6 +42,7 @@ function getSnakePositionSet(Snake) {
     pixels.get(position);
     snakePositions.add(position);
   }
+
 
   return snakePositions;
 }
@@ -121,7 +122,7 @@ window.addEventListener("keydown", (e) => {
       }
       else {
         cnt = 0;
-        start();
+        Intialize();
       }
   }
 })
@@ -146,7 +147,7 @@ function FindPosition() {
 let count = 0;
 
 function step() {
-  currentSnake.shift();
+  let tail = currentSnake.shift();
   let head = currentSnake[currentSnake.length - 1];
   let nexthead = currentDirection(head);
   let nextDirection = currentDirection;
@@ -161,13 +162,13 @@ function step() {
   }
 
   currentDirection = nextDirection;
+
   //  first we check valid head 
   if (!chekvalidHead(currentSnake, nexthead)) {
     stopGame();
     return;
   }
   //  then we add nexthead in snake
-
   currentSnake.push(nexthead);
 
   // for eatting food
@@ -175,9 +176,38 @@ function step() {
     currentSnake.push(nexthead);
     count += 1;
     Score.innerHTML = count + '';
+    foodPosition = movefood();
   }
+
+  updatePositionSet(tail, nexthead);
   drawSnake(currentSnake);
 }
+
+function movefood() {
+
+  console.log(vacantPositions.size);
+
+  let choice = Math.floor(Math.random() * vacantPositions.size)
+  let i = 0;
+
+  for (let key of vacantPositions) {
+    if (i === choice) {
+      console.log(key);
+      return key;
+    }
+    i++;
+  }
+
+}
+
+function updatePositionSet(tail, nexthead) {
+  let tailpos = toPos(tail[0], tail[1]);
+  let nextheadpos = toPos(nexthead[0], nexthead[1]);
+
+  vacantPositions.delete(nextheadpos);
+  vacantPositions.add(tailpos);
+}
+
 
 function areOpposite(dir1, dir2) {
   if (dir1 === moveLeft && dir2 === moveRight) {
@@ -194,7 +224,6 @@ function areOpposite(dir1, dir2) {
   }
 
 }
-
 
 function chekvalidHead(Snake, [top, left]) {
   let snakePositions = getSnakePositionSet(Snake);
@@ -213,11 +242,33 @@ function stopGame() {
   Canvas.style.borderColor = 'red';
 }
 
-function start() {
-  console.log("start")
+function Intialize() {
+  console.log("Intialize")
+  vacantPositions = new Set();
+
+  // intialize vacant position for food
+  for (let i = 0; i < Row; i++) {
+    for (let j = 0; j < Col; j++) {
+      vacantPositions.add(toPos(i, j));
+    }
+  }
+
+  snakePositions = getSnakePositionSet(currentSnake);
+
+  for (let i = 0; i < Row; i++) {
+    for (let j = 0; j < Col; j++) {
+      if (snakePositions.has(toPos(i, j))) {
+        vacantPositions.delete(toPos(i, j));
+      }
+    }
+  }
+
+  // food intialize 
+  foodPosition = movefood();
+
   gameInterval = setInterval(() => {
     step();
-  }, 100);
+  }, 300);
 }
 
-start();
+Intialize();
